@@ -4,3 +4,4 @@ cache/*
 .idea/*
 
 /public/js/xapi/config.js
+composer.lock
