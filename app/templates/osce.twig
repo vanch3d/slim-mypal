@@ -1,0 +1,411 @@
+{% extends 'layout/layout-master.twig' %}
+
+{% block jumbotron %}
+
+    <h1>OSCE Data</h1>
+
+    <h2>Explore the data collected from OSCE circuits</h2>
+
+{% endblock %}
+
+
+
+{% block content %}
+    <div class="col-sm-9" id="builder-basic">
+        <div class="form-group row">
+        </div>
+    </div>
+    <div class="col-sm-9" id="builder-basic">
+        <button type="button" class="btn btn-primary" id="submit">Query</button>
+    </div>
+    <div class="col-sm-12" id="builder-statements">
+
+    </div>
+    <div class="col-sm-12" id="builder-d3">
+
+    </div>
+
+    <div class="col-sm-12" id="builder-results">
+        <pre id="json-viewer"></pre>
+    </div>
+
+{% endblock %}
+
+
+{% block stylesheets %}
+    <link href="/lib/jQuery-QueryBuilder-master/dist/css/query-builder.default.css" rel="stylesheet">
+
+    <link href="/js/json-viewer/jquery.json-viewer.css" rel="stylesheet">
+    <style>
+        .bar:hover {
+            opacity: 0.5;
+            filter: alpha(opacity=50); /* For IE8 and earlier */
+        }
+        .d3-tip {
+            line-height: 1;
+            font-weight: bold;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            border-radius: 2px;
+        }
+
+        /* Creates a small triangle extender for the tooltip */
+        .d3-tip:after {
+            box-sizing: border-box;
+            display: inline;
+            font-size: 10px;
+            width: 100%;
+            line-height: 1;
+            color: rgba(0, 0, 0, 0.8);
+            content: "\25BC";
+            position: absolute;
+            text-align: center;
+        }
+
+        /* Style northward tooltips differently */
+        .d3-tip.n:after {
+            margin: -1px 0 0 0;
+            top: 100%;
+            left: 0;
+        }
+    </style>
+{% endblock %}
+
+{% block javascript %}
+<!-- <script type="text/javascript" src="/js/xapiwrapper/xapiwrapper.min.js"></script>   -->
+<script type="text/javascript" src="/js/xapiwrapper/cryptojs_v3.1.2.js"></script>
+<script type="text/javascript" src="/js/xapiwrapper/verbs.js"></script>
+<script type="text/javascript" src="/js/xapiwrapper/xapistatement.js"></script>
+<script type="text/javascript" src="/js/xapiwrapper/xapiwrapper.js"></script>
+
+    <script type="text/javascript" src="/js/json-viewer/jquery.json-viewer.js"></script>
+
+    <script src="//d3js.org/d3.v3.min.js"></script>
+
+    <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+
+    <script type="text/javascript" src="/js/moment.min.js"></script>
+<script type="text/javascript" src="/js/xapi/OSCE.js"></script>
+<script type="text/javascript" src="/lib/jQuery-QueryBuilder-master/dist/js/query-builder.standalone.min.js"></script>
+
+
+<script>
+    $(function() {
+
+        {
+            var margin = {top: 40, right: 20, bottom: 130, left: 70},
+                    width = 960 - margin.left - margin.right,
+                    height = 500 - margin.top - margin.bottom;
+
+            var formatPercent = d3.format(".0%");
+
+            var x = d3.scale.ordinal()
+                    .rangeRoundBands([0, width], .05);
+
+            var y = d3.scale.linear()
+                    .range([height, 0]);
+
+            var xAxis = d3.svg.axis()
+                    .scale(x)
+                    .orient("bottom");
+
+            var yAxis = d3.svg.axis()
+                    .scale(y)
+                    .orient("left")
+                    .tickFormat(formatPercent);
+
+            var tip = d3.tip()
+                    .attr('class', 'd3-tip')
+                    .offset([-10, 0])
+                    .html(function(d) {
+                        return "<strong>Station: </strong> <span style='color:#E86954'>" + d.letter +
+                                "</span><br><strong>Score:</strong> <span style='color:#E86954'>" + Number(d.frequency).toPrecision(2) + "</span>";
+                    })
+
+            function UPDATE(data) {
+                var bar22 = svg.selectAll(".bar2")
+                        .data(data);
+
+                bar22.enter()
+
+                        .append("rect");
+
+
+                bar22
+                        .filter(function(d){ return d.median })
+                        .attr("class", "bar2")
+                        .attr("x", function (d) {
+                            return x(d.letter);
+                        })
+                        .attr("fill",function(d){
+                            return (d.result && d.result.success) ? "red" : "red"
+                        })
+                        .attr("width", x.rangeBand())
+                        .attr("y", function (d) {
+                            console.log(d.median)
+                            return y(d.median? d.median : 0);
+                        })
+                        .attr("height", function (d) {
+                            return 3;
+                        })
+                bar22.exit().remove();
+
+
+                //});
+            };
+
+            //d3.tsv("data.tsv", type, function(error, data) {
+            function draw(data2) {
+
+                var data = data2.filter(function(item){
+                    return item.object.id.includes("OSCE.station");
+                });
+
+                x.domain(data.map(function (d) {
+                    d.letter = d.object.id;
+                    d.letter = d.letter.split("/").pop()
+                    return d.letter;
+                }));
+                y.domain([0, d3.max(data, function (d) {
+                    var ss = d.result;
+                    d.frequency = (ss) ? (d.result.score.scaled*1) : 0
+                    return d.frequency
+                })]);
+
+                svg.append("g")
+                        .attr("class", "x axis")
+                        .attr("transform", "translate(0," + height + ")")
+                        .call(xAxis)
+                        .selectAll("text")
+                        .attr("y", 0)
+                        .attr("x", 9)
+                        .attr("dy", ".35em")
+                        .attr("transform", "rotate(90)")
+                        .style("text-anchor", "start");
+                ;
+
+                svg.append("g")
+                        .attr("class", "y axis")
+                        .call(yAxis)
+                        .append("text")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", -60)
+                        .attr("dy", ".71em")
+                        .style("text-anchor", "end")
+                        .text("Pass Score");
+
+                svg.selectAll(".bar")
+                        .data(data)
+                        .enter().append("rect")
+
+                        .attr("class", "bar")
+                        .attr("x", function (d) {
+                            return x(d.letter);
+                        })
+                        .attr("fill",function(d){
+                            return (d.result && d.result.success) ? "blue" : "orange"
+                        })
+                        .attr("width", x.rangeBand())
+                        .attr("y", function (d) {
+                            return y(d.frequency);
+                        })
+                        .attr("height", function (d) {
+                            return height - y(d.frequency);
+                        })
+                        .on('mouseover', tip.show)
+                        .on('mouseout', tip.hide)
+                        .on("click", function(d){
+                            tip.hide();
+                            console.log(d)
+                        })
+
+                UPDATE(data);
+
+            };
+
+
+
+
+
+
+        }
+
+
+        var rules_basic = {
+            condition: 'AND',
+            rules: [{
+                id: 'name',
+                operator: 'equal',
+                value: ""
+            }]
+        };
+
+        $('#builder-basic').queryBuilder({
+            plugins: ['bt-tooltip-errors'],
+            allow_groups: false,
+            conditions: ['AND'],
+            filters: [{
+                id: 'name',
+                label: 'Actor',
+                type: 'string',
+                operators: ['equal']
+            }, {
+                id: 'category',
+                label: 'Category',
+                type: 'integer',
+                input: 'select',
+                values: {
+                    1: 'Books',
+                    2: 'Movies',
+                    3: 'Music',
+                    4: 'Tools',
+                    5: 'Goodies',
+                    6: 'Clothes'
+                },
+                operators: ['equal', 'not_equal', 'in', 'not_in', 'is_null', 'is_not_null']
+            }, {
+                id: 'in_stock',
+                label: 'In stock',
+                type: 'integer',
+                input: 'radio',
+                values: {
+                    1: 'Yes',
+                    0: 'No'
+                },
+                operators: ['equal']
+            }, {
+                id: 'price',
+                label: 'Price',
+                type: 'double',
+                validation: {
+                    min: 0,
+                    step: 0.01
+                }
+            }, {
+                id: 'id',
+                label: 'Identifier',
+                type: 'string',
+                placeholder: '____-____-____',
+                operators: ['equal', 'not_equal'],
+                validation: {
+                    format: /^.{4}-.{4}-.{4}$/
+                }
+            }],
+
+            rules: rules_basic
+        });
+
+        ADL.XAPIWrapper.changeConfig(xAPIConfig);
+
+        var agent = new ADL.XAPIStatement.Agent(ADL.XAPIWrapper.hash("Richardson, Robert"), "Richardson, Robert");
+
+        {
+            var search = ADL.XAPIWrapper.searchParams();
+            //search['verb'] = search['verb'] = ADL.verbs.failed.id;
+            //search['actor'] = {"objectType":"Agent","mbox_sha1sum":"51d9c99accc1c535a2c50cf62f4392695521059f"};
+            search['agent'] = JSON.stringify({
+                "objectType":"Agent",
+                "mbox_sha1sum":"92cad3231e1e6b89dfb7820078a03ba67cfecba9" })
+            search['limit'] = 100;
+            var ret = ADL.XAPIWrapper.getStatements(search);
+            if (ret) {
+
+                console.log(ret.statements.length);
+
+                $("#json-viewer").jsonViewer(ret.statements, {collapsed: true});
+
+                $.each(ret.statements,function(index,stmt)
+                {
+                    console.log(stmt);
+                    var a = moment(stmt.timestamp);
+
+                    var time = $("<div/>",{"text": a.format("YYYY MM DD"), "class": "col-sm-2"});
+                    var agent = $("<div/>",{"text": stmt.actor.name, "class": "col-sm-2"});
+                    var verb = $("<div/>",{"text": stmt.verb.display["en-US"], "class": "col-sm-2"});
+                    var object = $("<div/>",{"text": stmt.object.definition.name["en-US"], "class": "col-sm-3"});
+                    var result = $("<div/>",{"text": "", "class": "col-sm-3"});
+                    if (stmt.result)
+                    {
+                        var txt = "with an overall score of " + Number(stmt.result.score.scaled * 100).toFixed(2) + "%. ";
+                        if (stmt.result.response)
+                                    txt += stmt.result.response
+                        result.text(txt);
+                    }
+                    var statement = $("<div/>", {"class": "row"}).append(time).append(agent).append(verb).append(object).append(result);
+                    statement.appendTo($("#builder-statements"));
+                    //$("#builder-results").append($("<div/>",{"text": a.format("YYYY MM DD")}));
+                });
+
+                var svg = d3.select("#builder-d3").append("svg")
+                        .attr("width", width + margin.left + margin.right)
+                        .attr("height", height + margin.top + margin.bottom)
+                        .append("g")
+                        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                svg.call(tip);
+                draw(ret.statements);
+            }
+
+        }
+
+        function getAverage(sss)
+        {
+            var search = ADL.XAPIWrapper.searchParams();
+            //search['verb'] = search['verb'] = ADL.verbs.failed.id;
+            //search['actor'] = {"objectType":"Agent","mbox_sha1sum":"51d9c99accc1c535a2c50cf62f4392695521059f"};
+            //search['activity'] = "http://local.slim-mypal.org/xapi/activities/OSCE.station/2015.Y3.St17";
+            search['activity'] = sss;
+
+            //var ret = ADL.XAPIWrapper.getStatements(search);
+            //if (ret)
+            //    console.log(ret.statements.length);
+
+            var st_scores = []
+            ADL.XAPIWrapper.getStatements(search, null,
+                    function getmore(r){
+                        var res = JSON.parse(r.response);
+                        console.log(res.statements.length);
+                        $.each(res.statements,function(key,item){
+                            st_scores.push(item.result.score.scaled)
+                        });
+                        if (res.more && res.more !== ""){
+                            ADL.XAPIWrapper.getStatements(null, res.more, getmore);
+                        }
+                        else
+                        {
+                            //console.log(st_scores);
+                            var total = st_scores.reduce(function(a, b) {
+                                return a + b;
+                            });
+                            var avg = total / st_scores.length;
+                            console.log(total,avg);
+
+                            $.each(ret.statements,function(key,item){
+                                if (item.object.id == sss)
+                                {
+                                    item.median = avg;
+
+                                }
+                                item.frequency /=2;
+                            });
+                            UPDATE(ret.statements);
+
+                        }
+                    });
+
+
+
+
+        }
+
+        $.each(ret.statements,function(key,item){
+            if (item.object.id.includes("OSCE.station"))
+                getAverage(item.object.id)
+        });
+
+
+
+    })
+</script>
+{% endblock %}

@@ -1,0 +1,654 @@
+{% extends 'layout/layout-master.twig' %}
+
+{% block jumbotron %}
+
+    <h1>myPAL Admin</h1>
+
+    <h2>Load OSCE data</h2>
+{% endblock %}
+
+
+{% block content %}
+    <form class="col-sm-6">
+        <div class="form-group row">
+            <label for="inputYear" class="col-sm-2 form-control-label">OSCE Year</label>
+            <div class="col-sm-10">
+                <input type="number" class="form-control" id="inputYear" placeholder="OSCE year">
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <label for="inputStationData" class="col-sm-2 form-control-label">Station Blueprints</label>
+            <div class="col-sm-10">
+                <input type="file"  id="inputStationData" accept="text/csv">
+                <small class="text-muted">CSV format, using the station-per-station format</small>
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <label for="inputMarkData" class="col-sm-2 form-control-label" >Mark Sheets</label>
+            <div class="col-sm-10">
+                <input type="file"  id="inputMarkData" disabled   accept="text/csv">
+                <small class="text-muted">CSV format, using the station-per-station report</small>
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <label for="inputSumData" class="col-sm-2 form-control-label">Summative Data</label>
+            <div class="col-sm-10">
+                <input type="file"  id="inputSumData" accept="text/csv">
+                <small class="text-muted">CSV format, using the station-per-station report</small>
+            </div>
+
+        </div>
+
+
+
+
+
+
+        <div class="form-group row">
+            <div class="col-sm-offset-2 col-sm-10">
+                <button type="button" class="btn btn-primary" id="submit">Parse</button>
+                <div  style="display: inline-block" class="hidden" id="working"><i class="fa fa-refresh fa-spin fa-2x fa-fw" aria-hidden="true"></i>
+                    <span class="sr-only">working...</span>
+                </div>
+
+            </div>
+        </div>
+    </form>
+
+
+    <div class="col-sm-6">
+        <div class="row">
+            <button type="button" class="btn" disabled>Agent</button>
+            <button type="button" class="btn btn-primary">Verb</button>
+            <button type="button" class="btn btn-primary">Object</button>
+            <button type="button" class="btn btn-primary">Context</button>
+            <button type="button" class="btn btn-primary">Result</button>
+            <button type="button" class="btn btn-primary">Time</button>
+        </div>
+        <div class="row">
+        <pre id="json-viewer"></pre>
+        </div>
+    </div>
+
+    <div class="col-sm-12" id="ouput">
+        <div class="col-sm-4"><span>Statements</span> : <span id="count"></span></div>
+        <div class="col-sm-4"><span>Statements</span> : <span id="done"></span></div>
+    </div>
+    <div class="col-sm-12" id="log"></div>
+{% endblock %}
+
+{% block stylesheets %}
+    <link href="/js/json-viewer/jquery.json-viewer.css" rel="stylesheet">
+{% endblock %}
+
+{% block javascript %}
+   <!-- <script type="text/javascript" src="/js/xapiwrapper/xapiwrapper.min.js"></script>   -->
+    <script type="text/javascript" src="/js/xapiwrapper/cryptojs_v3.1.2.js"></script>
+    <script type="text/javascript" src="/js/xapiwrapper/verbs.js"></script>
+    <script type="text/javascript" src="/js/xapiwrapper/xapistatement.js"></script>
+    <script type="text/javascript" src="/js/xapiwrapper/xapiwrapper.js"></script>
+
+
+    <script type="text/javascript" src="/js/xapi/OSCE.js"></script>
+    <script type="text/javascript" src="/js/json-viewer/jquery.json-viewer.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/PapaParse/4.1.2/papaparse.min.js"></script>
+    <script>
+        $(function() {
+
+
+
+            function StationClass()
+            {
+                this.name = "";
+                this.type = "";
+                this.id = "";
+                this.PassScores = -1;
+                this.MaxScore = -1;
+            }
+
+
+            ADL.xhrRequestOnError = function(xhr, method, url, callback, callbackargs){
+                $("#log").append($("<span/>",{"text":"*","class": "label label-danger"}));
+
+            };
+
+
+            $("#json-viewer").jsonViewer({ "OSCEActivity": OSCEActivity}, {collapsed: false});
+
+            var stepped = 0, rowCount = 0, errorCount = 0, firstError;
+            var start, end;
+            var firstRun = true;
+            var config = {
+                worker: false,
+                skipEmptyLines : false,
+                header: false
+            };
+
+            var xapiConf = {
+                "endpoint" : "http://local.learninglocker.org/data/xAPI/",
+                "user" : "5314c0e086548d066d2278c0f79970e2051f1fe0",
+                "password" : "f91a9c0471f81fa726c0f749c64296eece2acc69",
+                'actor' : { "mbox": "nicolas@calques3d.org", "name": "Nicolas Van Labeke" }
+            };
+            ADL.XAPIWrapper.changeConfig(xapiConf);
+
+            // Parsing invoked
+            $('#submit').click(function()
+            {
+
+
+
+                var fileSummative = $('#inputSumData')[0].files;
+                var fileStation = $('#inputStationData')[0].files;
+
+                if (!fileSummative.length || !fileStation.length)
+                {
+                    alert("Please choose at least one file to parse.");
+                    return enableButton();
+                }
+
+                $('#submit').attr("disabled", true);
+                $("#working").toggleClass('hidden');
+
+                var stations = {};
+                var sumdata = [];
+
+                var vocabulary = {
+                    "activity" : {},
+                    "verb" : {},
+                };
+
+                var maxScore = 0;
+                var passTotal = 0;
+
+                // parse station descriptions
+                function parseStation(results, parser)
+                {
+                    if (!results.data.length) return;
+                    var dd = results.data[0];
+                    console.log("station")
+
+                    maxScore +=Number(dd["Max Score"]);
+                    passTotal +=Number(dd["Pass Mark"]);
+
+
+
+                    var station = {
+                        name: dd.Station,
+                        type: dd.Type,
+                        id: dd.ID,
+                        description: dd.Description,
+                        score: {
+                            PassMark: Number(dd["Pass Mark"]),
+                            MaxScore: Number(dd["Max Score"]),
+                        }
+                    };
+
+                    stations[dd.Station]=station;
+                }
+
+                function parseData(row, parser)
+                {
+                    if (!row.data.length) return;
+                    console.log("parseData");
+
+                    var session = row.data[0]["Session D1"];
+                    if (!session) return;
+
+                    var s1= session.split(", ");
+                    var s2= s1[1].split("-");
+                    var d = new Date(2015, 06, 16, s2[0].substring(0,2), s2[0].substring(2));
+
+                    var userstations = {
+                        name: row.data[0]["Candidate Name"],
+                        date: d,
+                        Score: row.data[0]["Total score"],
+                        stations: {}
+                    };
+
+                    $.each(row.data[0], function(key, value) {
+
+                        if (/^(Examiner|Station|SP grades)/.test(key) === true) {
+                            var k = key.split(" @ ");
+
+
+                            var station = {
+                                station : k[2],
+                                date : (k[1]=="Day 1") ? d : new Date(d.getTime() + 24*60*60*1000),
+                                score : {
+                                    Station : -1,
+                                    Examiner : -1,
+                                    SimPatient: -1
+                                }
+                            };
+
+                            if (k[2] in userstations.stations) station = userstations.stations[k[2]];
+
+                            if (/^(Examiner)/.test(key) === true) station.score.Examiner = value;
+                            if (/^(Station)/.test(key) === true) station.score.Station = value;
+                            if (/^(SP grades)/.test(key) === true) station.score.SimPatient = value;
+
+                            userstations.stations[k[2]] = station;
+                        }
+
+                    });
+
+                    sumdata.push(userstations)
+                    //var array = $.map(userstations, function(value, index) {
+                    //    sumdata.push(value)
+                    //});
+
+                }
+
+                $('input[type=file]').parse({
+                    config: {
+                        header: true,
+                        skipEmptyLines: true
+                    },
+                    before: function(file, inputElem)
+                    {
+                        console.log(file);
+                        // executed before parsing each file begins;
+                        // what you return here controls the flow
+                        return {
+                            action: "continue",
+                            reason: "Some reason",
+                            config: {
+                                step:(fileStation[0].name == file.name) ? parseStation : parseData
+                            }
+                        }
+                    },
+                    error: function(err, file, inputElem, reason)
+                    {
+                        // executed if an error occurs while loading the file,
+                        // or if before callback aborted for some reason
+                    },
+                    complete: function() {
+                        //console.log(stations,sumdata)
+                        // executed after all files are complete
+                        console.log(maxScore,passTotal);
+
+                        var statements = [];
+
+                        $.each(sumdata, function (key, userstation) {
+                           // console.log(userstation)
+
+                            // ###################################################
+                            var objOSCE = new ADL.XAPIStatement.Activity(
+                                    'http://local.slim-mypal.org/xapi/activity/OSCE-circuit/2015.Y3',
+                                    'OSCE Circuit Y3 (2015)',
+                                    'An OSCE usually comprises a circuit of short stations, in which each candidate is examined on a one-to-one basis with one or two impartial examiner(s) and either real or simulated patients.'
+                            );
+                            var agent = new ADL.XAPIStatement.Agent(ADL.XAPIWrapper.hash(userstation.name), userstation.name);
+
+                            // Statement: agent attempted OSCE
+                            var stmt1 = new ADL.XAPIStatement(agent, ADL.verbs.attempted, objOSCE);
+
+                            vocabulary.activity[objOSCE.id] = objOSCE;
+
+                            stmt1.generateId();
+                            stmt1.generateRegistration();
+                            stmt1.timestamp = userstation.date;
+
+                            var res = Number(userstation.Score);
+                            var objOSCE2 = new ADL.XAPIStatement.Activity(
+                                    'http://local.slim-mypal.org/xapi/activity/OSCE-circuit/2015.Y3',
+                                    'OSCE Circuit Y3 (2015)',
+                                    'An OSCE usually comprises a circuit of short stations, in which each candidate is examined on a one-to-one basis with one or two impartial examiner(s) and either real or simulated patients.'
+                            );
+                            var agent2 = new ADL.XAPIStatement.Agent(ADL.XAPIWrapper.hash(userstation.name), userstation.name);
+
+
+                            var stmt2 = new ADL.XAPIStatement(agent2, ADL.verbs.passed, objOSCE2 );
+
+
+                            stmt2.generateId();
+                            stmt2.generateRegistration();
+                            stmt2.timestamp = userstation.date;
+                            stmt2.result = {
+                                score: {
+                                    scaled: (1.0 * res) / maxScore,
+                                    raw: res,
+                                    min: 0,
+                                    max: maxScore
+                                },
+                                success: true,
+                                completion: true,
+                                duration: "PT10M"
+
+
+                            };
+
+                            if (res < passTotal)
+                            {
+                                stmt2.verb = ADL.verbs.failed;
+                                stmt2.result.success = false;
+                                stmt2.result.response = "The required overall passing score ("+maxScore+") has not been met";
+                            }
+
+
+                            // Add attempting OSCE statement
+                            statements.push(stmt1);
+
+
+                            vocabulary.activity[stmt1.object.id] = stmt1.object;
+                            vocabulary.activity[stmt2.object.id] = stmt2.object;
+                            vocabulary.verb[stmt1.verb.id] = stmt1.verb;
+                            vocabulary.verb[stmt2.verb.id] = stmt2.verb;
+
+                            var passHistory = 0;
+                            var passStation = 0;
+
+                            $.each(userstation.stations, function (key, station) {
+
+                                var tt = stations[station.station];
+
+                                var objStation = new ADL.XAPIStatement.Activity(
+                                        'http://local.slim-mypal.org/xapi/activities/OSCE.station/' + tt.id,
+                                        'OSCE Station ' + tt.id,
+                                        tt.description
+                                );
+                                var stmt3 = new ADL.XAPIStatement(agent, ADL.verbs.passed, objStation);
+
+
+
+                                stmt3.generateId();
+                                stmt3.generateRegistration();
+                                stmt3.timestamp = station.date;
+
+                                var tt = stations[station.station];
+                                var type = tt.type;
+                                var score = tt.score;
+
+
+                                var res = Number(station.score.Station);
+
+                                var maxScore = Number(score.MaxScore);
+                                var PassMark = Number(score.PassMark);
+
+                                stmt3.result = {
+                                    score: {
+                                        scaled: (1.0 * res) / maxScore,
+                                        raw: res,
+                                        min: 0,
+                                        max: maxScore
+                                    },
+                                    success: true,
+                                    completion: true,
+                                    duration: "PT10M"
+
+                                };
+                                if (res<PassMark)
+                                {
+                                    stmt3.verb = ADL.verbs.failed;
+                                    stmt3.result.success =  false;
+
+                                }
+                                else
+                                {
+                                    passStation++;
+                                    if (tt.type == "History") passHistory++;
+
+                                }
+
+                                // Add attempting station statement
+                                statements.push(stmt3)
+
+                                vocabulary.activity[stmt3.object.id] = stmt3.object;
+                                vocabulary.verb[stmt3.verb.id] = stmt3.verb;
+                            })
+
+
+                            if (passHistory<4 || passStation<9)
+                            {
+                                stmt2.verb = ADL.verbs.failed;
+                                stmt2.result.success = false;
+                                stmt2.result.response = "The required station rubrics (9 stations passed, including 4 History) have not been met";
+                                console.log(JSON.stringify(stmt2));
+                            }
+                            statements.push(stmt2);
+
+                        })
+
+
+                        $('#count').html(statements.length)
+                        $('#done').html(0)
+                        console.log(vocabulary);
+
+                        $("#json-viewer").jsonViewer(vocabulary, {collapsed: true});
+
+
+
+                        var count = 0;
+
+                        while(statements.length) {
+                            console.log(statements.length);
+                            ADL.XAPIWrapper.sendStatements(statements.splice(0,50),
+                                    function (resp, obj2) {
+                                        var el = $('#done');
+                                        var num = parseInt(el.text());
+                                        el.text(num+obj2.length);
+
+                                        if (obj2.length < 50)
+                                        {
+                                            $('#submit').attr("disabled", false);
+                                            $("#working").toggleClass('hidden');
+                                        }
+
+                                        obj2.forEach(function (item, index) {
+                                            //console.log("[" + item + "]: " + resp.status + " - " + resp.statusText);
+                                            //$("#log").append($("<div/>",{"text":item}));
+
+                                            $("#log").append($("<span/>", {
+                                                "text": "*",
+                                                "class": "label label-success"
+                                            }));
+                                        });
+                                    }
+                            );
+                        }
+
+
+
+                        /*ADL.XAPIWrapper.sendStatements(statements.slice(0,2000), function (resp, obj2) {
+                            obj2.forEach(function (item, index) {
+                                //console.log("[" + item + "]: " + resp.status + " - " + resp.statusText);
+                                //$("#log").append($("<div/>",{"text":item}));
+                                $("#log").append($("<span/>", {"text": "*", "class": "label label-success"}));
+                            });
+
+                        });*/
+                    }
+                });
+
+
+
+                return;
+
+
+                Papa.parse( fileSummative[0], {
+                    header: true,
+                    //preview: 20,
+                    step: function(row,stream) {
+                        //console.log("Row:", row.data);
+                        //console.log("Row:", row.data[0]["Centre D2"]);
+
+
+                        var obj = new ADL.XAPIStatement.Activity(
+                                'http://mypal.leeds.ac.uk/xapi/activities/OSCE.circuit',
+                                'OSCE Circuit',
+                                'An OSCE usually comprises a circuit of short stations, in which each candidate is examined on a one-to-one basis with one or two impartial examiner(s) and either real or simulated patients.'
+                        );
+
+                        var agent =  new ADL.XAPIStatement.Agent(ADL.XAPIWrapper.hash(row.data[0]["Candidate Name"]),"myPAL User 1");
+
+                        var stmt = new ADL.XAPIStatement(agent,ADL.verbs.launched,obj);
+                        stmt.generateId();
+                        //stmt.addOtherContextActivity( new ADL.XAPIStatement.Activity('compId:internet_proficiency') );
+                        stmt.generateRegistration();
+
+                        var session = row.data[0]["Session D1"];
+                        var s1= session.split(", ");
+                        var s2= s1[1].split("-");
+                        var d = new Date(2015, 06, 16, s2[0].substring(0,2), s2[0].substring(2));
+
+                        stmt.timestamp = d.toISOString();
+
+                        var stmt1 = new ADL.XAPIStatement(agent,ADL.verbs.launched,obj);
+                        stmt1.generateId();
+                        //stmt1.addOtherContextActivity( new ADL.XAPIStatement.Activity('compId:internet_proficiency') );
+                        stmt1.generateRegistration();
+
+                        var session = row.data[0]["Session D2"];
+                        var s1= session.split(", ");
+                        var s2= s1[1].split("-");
+                        var d = new Date(2015, 06, 17, s2[0].substring(0,2), s2[0].substring(2));
+
+                        stmt1.timestamp = d.toISOString();
+
+                        /*ADL.XAPIWrapper.sendStatement(stmt, function(resp, obj2){
+                            console.log("[" + obj2.id + "]: " + resp.status + " - " + resp.statusText);
+                            $("#log").append($("<div/>",{"text":obj2.id}));
+                        });*/
+
+                        var match = row.data[0]["Session D2"];
+
+
+                        $.each(row.data[0], function(key, value) {
+
+                            if (/^(Examiner|Station|SP grades)/.test(key) === true) {
+                                var k = key.split(" @ ");
+
+
+                                var station = {
+                                    name : k[2],
+                                    date : k[1],
+                                    score : {
+                                        Station : 0,
+                                        Examiner : 0,
+                                        SimPatient: 0
+                                    }
+                                };
+                                if (k[2] in stations) station = stations[k[2]];
+                                if (/^(Examiner)/.test(key) === true) station.score.Examiner = value;
+                                if (/^(Station)/.test(key) === true) station.score.Station = value;
+                                if (/^(SP grades)/.test(key) === true) station.score.SimPatient = value;
+                                stations[k[2]] = station;
+                                //console.log(station)
+                            }
+                        });
+
+                        var statements = [];
+                        statements.push(stmt);
+                        statements.push(stmt1);
+                        $.each(stations, function(key, station) {
+                            //console.log(station);
+
+                            var obj = new ADL.XAPIStatement.Activity(
+                                    'http://mypal.leeds.ac.uk/xapi/activities/OSCE.station',
+                                    'OSCE Station',
+                                    'An OSCE usually comprises a circuit of short stations, in which each candidate is examined on a one-to-one basis with one or two impartial examiner(s) and either real or simulated patients.');
+                            var stmt3 = new ADL.XAPIStatement(agent,ADL.verbs.attempted,obj);
+                            stmt3.generateId();
+                            stmt3.timestamp = (station.date == "Day 1") ? stmt.timestamp : stmt1.timestamp;
+                            stmt3.addParentActivity( new ADL.XAPIStatement.Activity('http://mypal.leeds.ac.uk/xapi/activities/OSCE.circuit') );
+                            stmt3.generateRegistration();
+                            stmt3.result = {
+                                score: {
+                                    /*scaled: Number(station.score.Station),*/
+                                    raw: Number(station.score.Station),
+                                    min: 0,
+                                    max: 100
+                                },
+                                success: true,
+                                completion: true,
+                                duration: "PT10M",
+                                extensions: {
+                                    "http://mypal.leeds.ac.uk/xapi/result/OSCE.station.ExaminerGrade" : station.score.Examiner,
+                                    "http://mypal.leeds.ac.uk/xapi/result/OSCE.station.SimPatientGrade" : station.score.SimPatient,
+                                }
+                            };
+                            statements.push(stmt3);
+                        });
+
+
+
+                        ADL.XAPIWrapper.sendStatements(statements, function(resp, obj2){
+                            obj2.forEach(function(item, index){
+                                //console.log("[" + item + "]: " + resp.status + " - " + resp.statusText);
+                                //$("#log").append($("<div/>",{"text":item}));
+                                $("#log").append($("<span/>",{"text":"*","class": "label label-success"}));
+                            });
+
+                        });
+                    },
+                    complete: function() {
+                        console.log("All done!");
+                    }
+
+                });
+
+                /*
+                 $('#files').parse({
+                 config: config,
+                 before: function(file, inputElem)
+                 {
+                 start = now();
+                 console.log("Parsing file...", file);
+                 },
+                 error: function(err, file)
+                 {
+                 console.log("ERROR:", err, file);
+                 firstError = firstError || err;
+                 errorCount++;
+                 },
+                 complete: function(a,b,c)
+                 {
+                 end = now();
+                 printStats("Done with all files");
+                 console.log("Finished:", a);
+                 }
+                 });*/
+
+
+            });
+
+
+            function enableButton()
+            {
+                $('#submit').prop('disabled', false);
+            }
+            function disableButton()
+            {
+                $('#submit').prop('disabled', true);
+            }
+            function now()
+            {
+                return typeof window.performance !== 'undefined'
+                        ? window.performance.now()
+                        : 0;
+            }
+            function printStats(msg)
+            {
+                if (msg)
+                    console.log(msg);
+                console.log("       Time:", (end-start || "(Unknown; your browser does not support the Performance API)"), "ms");
+                console.log("  Row count:", rowCount);
+                if (stepped)
+                    console.log("    Stepped:", stepped);
+                console.log("     Errors:", errorCount);
+                if (errorCount)
+                    console.log("First error:", firstError);
+            }
+
+        })
+    </script>
+{% endblock %}
+
+
+
+
+
