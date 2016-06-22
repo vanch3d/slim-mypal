@@ -3,3 +3,4 @@ log/*
 cache/*
 .idea/*
 
+/public/js/xapi/config.js
