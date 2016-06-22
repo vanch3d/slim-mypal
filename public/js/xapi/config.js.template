@@ -1,0 +1,22 @@
+/**
+ * Created by vanch3d on 16/06/2016.
+ */
+
+/**
+ * Specify the default Learning Locker (or any other LRS) entry points
+ * @type {{endpoint: string, user: string, password: string, actor: {mbox: string, name: string}}}
+ */
+var xAPIConfig =
+{
+    endpoint :  "[LRS endpoint]",
+    user :      "[endpoint username]",
+    password :  "[endpoint pwd]",
+    actor : {
+        "mbox": "[actor mail]",
+        "name": "[actor name]"
+    }
+}
+
+
+
+
