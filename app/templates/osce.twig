@@ -140,7 +140,7 @@
                         })
                         .attr("width", x.rangeBand())
                         .attr("y", function (d) {
-                            console.log(d.median)
+                            //console.log(d.median)
                             return y(d.median? d.median : 0);
                         })
                         .attr("height", function (d) {
@@ -159,6 +159,12 @@
                     return item.object.id.includes("OSCE.station");
                 });
 
+                data.sort(function(a, b)
+                {
+                    return d3.ascending(a.object.id,b.object.id)}
+                );
+
+
                 x.domain(data.map(function (d) {
                     d.letter = d.object.id;
                     d.letter = d.letter.split("/").pop()
@@ -167,7 +173,7 @@
                 y.domain([0, d3.max(data, function (d) {
                     var ss = d.result;
                     d.frequency = (ss) ? (d.result.score.scaled*1) : 0
-                    return d.frequency
+                    return 1;//d.frequency
                 })]);
 
                 svg.append("g")
@@ -194,6 +200,8 @@
 
                 svg.selectAll(".bar")
                         .data(data)
+
+
                         .enter().append("rect")
 
                         .attr("class", "bar")
@@ -214,7 +222,7 @@
                         .on('mouseout', tip.hide)
                         .on("click", function(d){
                             tip.hide();
-                            console.log(d)
+                            //console.log(d)
                         });
 
                 update(data);
@@ -303,18 +311,18 @@
             //search['actor'] = {"objectType":"Agent","mbox_sha1sum":"51d9c99accc1c535a2c50cf62f4392695521059f"};
             search['agent'] = JSON.stringify({
                 "objectType":"Agent",
-                "mbox_sha1sum":"92cad3231e1e6b89dfb7820078a03ba67cfecba9" })
+                "mbox_sha1sum":"801bbb3112222730c9be87f52e49d4e8720ba87c" })
             search['limit'] = 100;
             var ret = ADL.XAPIWrapper.getStatements(search);
             if (ret) {
 
-                console.log(ret.statements.length);
+                //console.log(ret.statements.length);
 
                 $("#json-viewer").jsonViewer(ret.statements, {collapsed: true});
 
-                $.each(ret.statements,function(index,stmt)
+                /*$.each(ret.statements,function(index,stmt)
                 {
-                    console.log(stmt);
+                    //console.log(stmt);
                     var a = moment(stmt.timestamp);
 
                     var time = $("<div/>",{"text": a.format("YYYY MM DD"), "class": "col-sm-2"});
@@ -332,7 +340,7 @@
                     var statement = $("<div/>", {"class": "row"}).append(time).append(agent).append(verb).append(object).append(result);
                     statement.appendTo($("#builder-statements"));
                     //$("#builder-results").append($("<div/>",{"text": a.format("YYYY MM DD")}));
-                });
+                });*/
 
                 var svg = d3.select("#builder-d3").append("svg")
                         .attr("width", width + margin.left + margin.right)
@@ -362,7 +370,7 @@
             ADL.XAPIWrapper.getStatements(search, null,
                     function getmore(r){
                         var res = JSON.parse(r.response);
-                        console.log(res.statements.length);
+                        //console.log(res.statements.length);
                         $.each(res.statements,function(key,item){
                             st_scores.push(item.result.score.scaled)
                         });
@@ -376,7 +384,7 @@
                                 return a + b;
                             });
                             var avg = total / st_scores.length;
-                            console.log(total,avg);
+                            //console.log(total,avg);
 
                             $.each(ret.statements,function(key,item){
                                 if (item.object.id == sss)
@@ -384,7 +392,7 @@
                                     item.median = avg;
 
                                 }
-                                item.frequency /=2;
+
                             });
                             update(ret.statements);
 
