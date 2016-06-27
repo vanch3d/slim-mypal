@@ -27,13 +27,23 @@ final class HomeAction
         return $response;
     }
 
-    public function showOSCE(Request $request, Response $response, $args)
+    public function showUserOSCE(Request $request, Response $response, $args)
     {
         $this->logger->info("OSCE page action dispatched");
 
         $route = $request->getAttribute('route');
         $name = $route->getName();
         $this->view->render($response, 'osce.twig',array('route' => $name));
+        return $response;
+    }
+
+    public function showCohortOSCE(Request $request, Response $response, $args)
+    {
+        $this->logger->info("OSCE page action dispatched");
+
+        $route = $request->getAttribute('route');
+        $name = $route->getName();
+        $this->view->render($response, 'osce-viewer.twig',array('route' => $name));
         return $response;
     }
 

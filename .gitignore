@@ -1,7 +1,9 @@
 vendor/
 log/*
 cache/*
-.idea/*
-
+.idea/
+public/offline/
 /public/js/xapi/config.js
 composer.lock
+
+

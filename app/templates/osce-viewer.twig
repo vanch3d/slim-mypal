@@ -12,193 +12,425 @@
 
 {% block content %}
 
-    <div class="panel panel-default">
-        <div class="panel-heading"><h3 class="panel-title">Statement List <span class="pull-right"><a class="btn btn-primary btn-xs" href="#" role="button" id="get-statements-with-search">Get Statements <i class="glyphicon glyphicon-refresh"></i></a></span></h3></div>
-        <div class="panel-body">
+    <div class="col-sm-12" id="builder-d3">
 
+    </div>
 
-            <div class="panel panel-info">
-                <div class="panel-heading collapser">
-                    <h4 class="panel-title"><a data-toggle="collapse" data-target="#query-options" href="#query-options" class="collapsed">Query Options</a></h4>
-                </div>
-                <div id="query-options" class="panel-collapse collapse">
-                    <div class="panel-body">
-
-                        <div class="row">
-
-                            <div class="form-group col-md-6">
-                                <label for="search-predefined-verb">Predefined Verb</label>
-                                <select class="form-control" name="search-predefined-verb" id="search-predefined-verb">
-                                    <option></option>
-                                </select>
-                            </div>
-
-                            <div class="form-group col-md-6">
-                                <label for="search-verb-sort">Verb Sort</label>
-                                <select class="form-control" aria-describedby="Verb Sort" id="search-verb-sort">
-                                    <option value="">Descending</option>
-                                    <option value="true">Ascending</option>
-                                </select>
-                            </div>
-
-                        </div><!-- .row -->
-
-                        <div class="row">
-
-                            <div class="form-group col-md-12">
-                                <label for="search-user-verb-id">Verb ID</label>
-                                <input type="text" class="form-control" value="" aria-describedby="Verb ID" placeholder="http://adlnet.gov/verbs/answered" id="search-user-verb-id" />
-                            </div>
-
-                        </div><!-- .row -->
-
-                        <div class="row">
-
-                            <div class="form-group col-md-9">
-                                <label for="search-actor">Agent</label>
-                                <input type="text" class="form-control" value="" aria-describedby="Agent" placeholder="{'mbox':'mailto:tyler.mulligan.ctr@adlnet.gov'}" id="search-actor" />
-                            </div>
-
-                            <div class="form-group col-md-3">
-                                <label for="search-related-agents">Related Agents</label>
-                                <select class="form-control" aria-describedby="Related Agents" id="search-related-agents">
-                                    <option></option>
-                                    <option>false</option>
-                                    <option>true</option>
-                                </select>
-                            </div>
-
-                        </div><!-- .row -->
-
-                        <div class="row">
-
-                            <div class="form-group col-md-9">
-                                <label for="search-activity-id">Activity ID</label>
-                                <input type="text" class="form-control" value="" aria-describedby="Activity ID" placeholder="http://adlnet.gov/activities/question" id="search-activity-id" />
-                            </div>
-
-                            <div class="form-group col-md-3">
-                                <label for="search-related-activities">Related Activities</label>
-                                <select class="form-control" aria-describedby="Related Activities" id="search-related-activities">
-                                    <option></option>
-                                    <option>false</option>
-                                    <option>true</option>
-                                </select>
-                            </div>
-
-                        </div><!-- .row -->
-
-                        <div class="row">
-
-                            <div class="form-group col-md-12">
-                                <label for="search-registration-id">Registration ID</label>
-                                <input type="text" class="form-control" value="" aria-describedby="Registration ID" placeholder="51a6f860-1997-11e3-8ffd-0800200c9a66" id="search-registration-id" />
-                            </div>
-
-                        </div><!-- .row -->
-
-                        <div class="row">
-
-                            <div class="form-group col-md-6">
-                                <label class="control-label" for="search-statement-id">Statement ID</label>
-                                <input type="text" class="form-control" value="" aria-describedby="Activity ID" placeholder="ef8a3c05-7c88-4d46-a821-c6f2f061ef23" id="search-statement-id" pattern="[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}" />
-                            </div>
-
-
-                            <div class="form-group col-md-6">
-                                <label class="control-label" for="search-voided-statement-id">Voided Statement ID</label>
-                                <input type="text" class="form-control" value="" aria-describedby="Voided Activity ID" placeholder="00d9f122-e9cd-4ea3-b180-9daa49c8a7e5" id="search-voided-statement-id" pattern="[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}" />
-                            </div>
-
-                        </div><!-- .row -->
-
-                        <div class="row">
-
-                            <div class="form-group col-md-5">
-                                <label for="search-statements-since-date">Since Date</label>
-                                <div class="input-group date" id="search-statements-since-date">
-                                    <input type="text" class="form-control" />
-                    <span class="input-group-addon">
-                      <span class="glyphicon glyphicon-calendar"></span>
-                    </span>
-                                </div>
-                            </div>
-
-                            <div class="form-group col-md-5">
-                                <label for="search-statements-until-date">Until Date</label>
-                                <div class="input-group date" id="search-statements-until-date">
-                                    <input type="text" class="form-control" />
-                    <span class="input-group-addon">
-                      <span class="glyphicon glyphicon-calendar"></span>
-                    </span>
-                                </div>
-                            </div>
-
-                            <div class="form-group col-md-2">
-                                <label for="search-limit">Limit</label>
-                                <input type="text" class="form-control" value="" aria-describedby="Limit" placeholder="25" id="search-limit" />
-                            </div>
-
-                        </div><!-- .row -->
-
-                        <div class="row">
-
-                            <div class="form-group col-md-12">
-                                <label for="xapi-query">xAPI Query</label>
-                                <input type="text" class="form-control" value="" aria-describedby="xAPI Query" id="xapi-query" readonly />
-                            </div>
-
-                        </div><!-- .row -->
-
-                        <p class="pull-right">
-                            <a class="btn btn-default" href="#" role="button" id="reset-search">Clear Form <i class="glyphicon glyphicon-remove-circle"></i></a>
-                        </p>
-
-                    </div><!-- .panel-body -->
-                </div><!-- #query-options -->
-            </div><!-- .panel -->
-
-            <table id="statement-list" class="table table-striped table-bordered dt-responsive" cellspacing="0">
-                <thead>
-                <tr>
-                    <th>Timestamp</th>
-                    <th>Actor Name</th>
-                    <th>Verb</th>
-                    <th>Object Name</th>
-                    <th>Object Type</th>
-                    <th>Authority Name</th>
-                    <th></th>
-                </tr>
-                </thead>
-
-                <tfoot>
-                <tr>
-                    <th>Timestamp</th>
-                    <th>Actor Name</th>
-                    <th>Verb</th>
-                    <th>Object Name</th>
-                    <th>Object Type</th>
-                    <th>Authority Name</th>
-                    <th></th>
-                </tr>
-                </tfoot>
-            </table>
-
-            <div class="pull-right">
-                <a class="btn btn-success btn-sm" href="#" role="button" id="more">Get More <i class="glyphicon glyphicon-cloud-download"></i></a>
-            </div>
-
-        </div><!-- .panel-body -->
-    </div><!-- .panel -->
-
+    <div class="col-sm-12" id="builder-results">
+        <pre id="json-viewer"></pre>
+    </div>
 
 {% endblock %}
 
 
 {% block stylesheets %}
-    <link rel="stylesheet" href="//cdn.datatables.net/plug-ins/f2c75b7247b/integration/bootstrap/3/dataTables.bootstrap.css">
+    <link href="/lib/json-viewer/jquery.json-viewer.css" rel="stylesheet">
+    <style>
 
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        .box {
+            font: 10px sans-serif;
+        }
+
+        .box line,
+        .box rect,
+        .box circle {
+            fill: steelblue;
+            stroke: #000;
+            stroke-width: 1px;
+        }
+
+        .box .center {
+            stroke-dasharray: 3,3;
+        }
+
+        .box .outlier {
+            fill: none;
+            stroke: #000;
+        }
+
+        .axis {
+            font: 12px sans-serif;
+        }
+
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        }
+
+        .x.axis path {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        }
+
+    </style>
 {% endblock %}
 
 {% block javascript %}
+    <!--  <script type="text/javascript" src="/lib/xapiwrapper/xapiwrapper.min.js"></script>   -->
+    <script type="text/javascript" src="/lib/xapiwrapper/cryptojs_v3.1.2.js"></script>
+    <script type="text/javascript" src="/lib/xapiwrapper/verbs.js"></script>
+    <script type="text/javascript" src="/lib/xapiwrapper/xapistatement.js"></script>
+    <script type="text/javascript" src="/lib/xapiwrapper/xapiwrapper.js"></script>
+
+    <script type="text/javascript" src="/lib/xapiwrapper/xapicollection.js"></script>
+    <script type="text/javascript" src="/lib/xapiwrapper/xapidashboard.js"></script>
+
+
+    <script type="text/javascript" src="/lib/json-viewer/jquery.json-viewer.js"></script>
+
+    <script src="//d3js.org/d3.v3.min.js"></script>
+    <script src="//labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
+
+    <script type="text/javascript" src="/js/xapi/config.js"></script>
+    <script type="text/javascript" src="/js/d3.box.js"></script>
+    <script>
+
+        XAPIWrapper.prototype.getAggregate = function(searchparams, more, callback)
+        {
+            if (this.testConfig())
+            {
+                var url = this.lrs.endpoint + "aggregate";
+                if (more)
+                {
+                    url = this.base + more;
+                }
+                else
+                {
+                    var urlparams = new Array();
+
+                    for (s in searchparams)
+                    {
+                        if (s == "until" || s == "since") {
+                            var d = new Date(searchparams[s]);
+                            urlparams.push(s + "=" + encodeURIComponent(d.toISOString()));
+                        } else {
+                            urlparams.push(s + "=" + encodeURIComponent(searchparams[s]));
+                        }
+                    }
+                    if (urlparams.length > 0)
+                        url = url + "?" + urlparams.join("&");
+                }
+
+                var res = ADL.XHR_request(this.lrs,url, "GET", null, this.lrs.auth, callback);
+                if(res === undefined || res.status == 404)
+                {
+                    return null
+                }
+
+                try
+                {
+                    return JSON.parse(res.response);
+                }
+                catch(e)
+                {
+                    return res.response;
+                }
+            }
+        };
+
+
+        $(function() {
+            ADL.XAPIWrapper.changeConfig(xAPIConfig);
+
+            //var wrapper = ADL.XAPIWrapper;
+            //wrapper.changeConfig({"endpoint" : 'https://lrs.adlnet.gov/xAPI/'});
+            var dash = new ADL.XAPIDashboard();
+
+            // get all statements made in the last two weeks
+            //var query = {'since': new Date(Date.now() - 1000*60*60*24*30*365*4).toISOString()};
+            var query = { 'limit' : 500 };
+            dash.fetchAllStatements(query, function(a,b,c){
+
+                console.log(a);
+
+                var t = a
+                        .where('object.id = /OSCE\.station/')
+                        .groupBy('object.id')
+                        //.orderBy('object.id','descending')
+                        .max('result.score.raw')
+                        .min('result.score.raw')
+
+
+                t.exec(function(data){
+                    console.log(data);
+
+                    var labels = true; // show the text labels beside individual boxplots?
+
+                    var margin = {top: 30, right: 50, bottom: 120, left: 50};
+                    var  width = 1000 - margin.left - margin.right;
+                    var height = 600 - margin.top - margin.bottom;
+
+                    function draw (data){
+                        // using an array of arrays with
+                        // data[n][2]
+                        // where n = number of columns in the data file
+                        // data[i][0] = name of the ith column
+                        // data[i][1] = array of values of ith column
+
+                        $.each(data,function(key,item){
+                            item.values = [];
+                            $.each(item.data,function(key,stmt){
+
+                                item.values.push(stmt.result.score.raw);
+                            });
+                        });
+
+
+                        var max = d3.max(data, function (d) {
+
+                            return d.max;//d.frequency
+                        })
+                        var min = d3.min(data, function (d) {
+
+                            return d.min;//d.frequency
+                        })
+
+                        var chart = d3.box()
+                                .whiskers(iqr(1.5))
+                                .height(height)
+                                .domain([min, max])
+                                .showLabels(labels);
+
+                        var svg = d3.select("#builder-d3").append("svg")
+                                .attr("width", width + margin.left + margin.right)
+                                .attr("height", height + margin.top + margin.bottom)
+                                .attr("class", "box")
+                                .append("g")
+                                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                        // the x-axis
+                        var x = d3.scale.ordinal()
+                                .domain( data.map(function(d) {
+                                    console.log(d);
+                                    d.letter = d.group;
+                                    d.group = d.letter.split("/").pop();
+                                    return d.group } ) )
+                                .rangeRoundBands([0 , width], 0.7, 0.3);
+
+                        var xAxis = d3.svg.axis()
+                                .scale(x)
+                                .orient("bottom");
+
+                        // the y-axis
+                        var y = d3.scale.linear()
+                                .domain([min, max])
+                                .range([height + margin.top, 0 + margin.top]);
+
+                        var yAxis = d3.svg.axis()
+                                .scale(y)
+                                .orient("left");
+
+                        // draw the boxplots
+                        svg.selectAll(".box")
+                                .data(data)
+                                .enter().append("g")
+                                .attr("transform", function(d) { return "translate(" +  x(d.group)  + "," + margin.top + ")"; } )
+                                .call(chart.width(x.rangeBand()));
+
+
+                        // add a title
+                        svg.append("text")
+                                .attr("x", (width / 2))
+                                .attr("y", 0 + (margin.top / 2))
+                                .attr("text-anchor", "middle")
+                                .style("font-size", "18px")
+                                //.style("text-decoration", "underline")
+                                .text("OSCE 2015");
+
+                        // draw y axis
+                        svg.append("g")
+                                .attr("class", "y axis")
+                                .call(yAxis)
+                                .append("text") // and text1
+                                .attr("transform", "rotate(-90)")
+                                .attr("y", 6)
+                                .attr("dy", ".71em")
+                                .style("text-anchor", "end")
+                                .style("font-size", "16px")
+                                .attr("transform", "rotate(0)")
+                                .text("Score");
+
+                        // draw x axis
+                        svg.append("g")
+                                .attr("class", "x axis")
+                                .attr("transform", "translate(0," + (height  + margin.top + 10) + ")")
+                                .call(xAxis)
+
+                                .selectAll("text")
+                                .attr("y", 0)
+                                .attr("x", 9)
+                                .attr("dy", ".35em")
+                                .attr("transform", "rotate(90)")
+                                .style("text-anchor", "start")
+
+
+
+
+                    }
+
+                    draw (data)
+
+                });
+
+
+
+
+
+            });
+
+            return;
+
+
+
+
+            var min = Infinity,
+                    max = -Infinity;
+
+
+            // Returns a function to compute the interquartile range.
+            function iqr(k) {
+                    return function(d, i) {
+                        var q1 = d.quartiles[0],
+                                q3 = d.quartiles[2],
+                                iqr = (q3 - q1) * k,
+                                i = -1,
+                                j = d.length;
+                        while (d[++i] < q1 - iqr);
+                        while (d[--j] > q3 + iqr);
+                        return [i, j];
+                    };
+                }
+
+
+            function getAverage(sss)
+            {
+                var search = ADL.XAPIWrapper.searchParams();
+                //search['verb'] = search['verb'] = ADL.verbs.failed.id;
+                //search['actor'] = {"objectType":"Agent","mbox_sha1sum":"51d9c99accc1c535a2c50cf62f4392695521059f"};
+                //search['activity'] = "http://local.slim-mypal.org/xapi/activities/OSCE.station/2015.Y3.St17";
+                search['activity'] = sss;
+
+                //var ret = ADL.XAPIWrapper.getStatements(search);
+                //if (ret)
+                //    console.log(ret.statements.length);
+
+                var st_scores = []
+
+                var data = [];
+
+                var letter = sss;
+                letter = letter.split("/").pop()
+
+                data[0] = letter;
+                data[1] = [];
+                data[2] = {
+                    min:    Infinity,
+                    max:    -Infinity
+                };
+
+                ADL.XAPIWrapper.getAggregate(search, null,
+                        function getmore(r){
+                            var res = JSON.parse(r.response);
+
+
+
+                            //console.log(res.statements.length);
+                            $.each(res.statements,function(key,item){
+
+                                var v1 = Math.floor(item.result.score.raw);
+                                data[1].push(v1);
+
+                                if (v1 > data[2].max) data[2].max = v1;
+                                if (v1 < data[2].min) data[2].min = v1;
+                            });
+                            if (res.more && res.more !== ""){
+                                ADL.XAPIWrapper.getStatements(null, res.more, getmore);
+                            }
+                            else
+                            {
+                                //update(ret.statements);
+                                if (data[2].max > max) max = data[2].max;
+                                if (data[2].min < min) min = data[2].min;
+                            }
+                        });
+
+
+                return data;
+
+            }
+
+            ADL.XAPIWrapper.changeConfig(xAPIConfig);
+
+            var agent = new ADL.XAPIStatement.Agent(ADL.XAPIWrapper.hash("Nicolas Van Labeke"), "Nicolas");
+
+            {
+
+                var pipeline=[
+                    {
+                        "$match": {
+                            "statement.object.id": {$regex : "OSCE\.station"},
+                            "voided": false
+                        }
+                    }
+                ];
+
+                var ret = ADL.XAPIWrapper.getAggregate(search);
+                return;
+
+                var search = ADL.XAPIWrapper.searchParams();
+                //search['verb'] = search['verb'] = ADL.verbs.failed.id;
+                //search['actor'] = {"objectType":"Agent","mbox_sha1sum":"51d9c99accc1c535a2c50cf62f4392695521059f"};
+                search['agent'] = JSON.stringify({
+                    "objectType":"Agent",
+                    "mbox_sha1sum":"801bbb3112222730c9be87f52e49d4e8720ba87c" })
+                search['limit'] = 100;
+                var ret = ADL.XAPIWrapper.getStatements(search);
+                if (ret) {
+
+                    //console.log(ret.statements.length);
+
+                    $("#json-viewer").jsonViewer(ret.statements, {collapsed: true});
+
+
+                    /*var svg = d3.select("#builder-d3").append("svg")
+                            .attr("width", width + margin.left + margin.right)
+                            .attr("height", height + margin.top + margin.bottom)
+                            .append("g")
+                            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                    svg.call(tip);*/
+                    //draw(ret.statements);
+                    data = [];
+
+                    $.each(ret.statements,function(key,item){
+                        if (item.object.id.includes("OSCE.station"))
+                        {
+                            var rrr = getAverage(item.object.id)
+
+                            data.push(rrr);
+                        }
+                    });
+
+                    console.log(data)
+                    draw(data)
+                }
+
+            }
+
+
+
+
+
+
+        })
+    </script>
 {% endblock %}
