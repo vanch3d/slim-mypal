@@ -33,7 +33,7 @@ final class HomeAction
 
         $route = $request->getAttribute('route');
         $name = $route->getName();
-        $this->view->render($response, 'osce.twig',array('route' => $name));
+        $this->view->render($response, 'osce-user.twig',array('route' => $name));
         return $response;
     }
 
@@ -43,7 +43,7 @@ final class HomeAction
 
         $route = $request->getAttribute('route');
         $name = $route->getName();
-        $this->view->render($response, 'osce-viewer.twig',array('route' => $name));
+        $this->view->render($response, 'osce-cohort.twig',array('route' => $name));
         return $response;
     }
 
