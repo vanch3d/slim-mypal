@@ -92,6 +92,7 @@
 
     <script type="text/javascript" src="/js/xapi/config.js"></script>
     <script type="text/javascript" src="/js/d3.box.js"></script>
+    <script src="/lib/bootstrap-waitingfor/bootstrap-waitingfor.js"></script>
     <script>
 
         XAPIWrapper.prototype.getAggregate = function(searchparams, more, callback)
@@ -139,20 +140,41 @@
 
 
         $(function() {
-            ADL.XAPIWrapper.changeConfig(xAPIConfig);
+            /*ADL.XAPIWrapper.changeConfig(xAPIConfig);
+            ADL.XAPIWrapper.changeConfig({"endpoint": 'http://local.learninglocker.org/api/v1/statements/'});
+            var pipeline = [
+                {
+                    "$match": {
+                        "statement.object.id" : { $regex : "OSCE\.station"},
+                        "voided": false
+                    }
 
-            //var wrapper = ADL.XAPIWrapper;
-            //wrapper.changeConfig({"endpoint" : 'https://lrs.adlnet.gov/xAPI/'});
+                }
+            ];
+            var search = {
+                "pipeline" : JSON.stringify(pipeline)
+            }
+
+            console.log(search);
+            var ret = ADL.XAPIWrapper.getAggregate(search);
+            console.timeEnd('Total operating time');*/
+
+
+            console.time('Total operating time');
+            ADL.XAPIWrapper.changeConfig(xAPIConfig);
             var dash = new ADL.XAPIDashboard();
+
+            waitingDialog.show('Loading data ...');
 
             // get all statements made in the last two weeks
             //var query = {'since': new Date(Date.now() - 1000*60*60*24*30*365*4).toISOString()};
-            var query = { 'limit' : 500 };
-            dash.fetchAllStatements(query, function(a,b,c){
+            var query = { 'limit' : 5000 };
+            dash.fetchAllStatements(query, function(collection){
+                console.timeEnd('Total operating time');
+                console.time('Total operating time');
 
-                console.log(a);
-
-                var t = a
+                //console.log(collection);
+                var request = collection
                         .where('object.id = /OSCE\.station/')
                         .groupBy('object.id')
                         //.orderBy('object.id','descending')
@@ -160,8 +182,9 @@
                         .min('result.score.raw')
 
 
-                t.exec(function(data){
-                    console.log(data);
+                request.exec(function(data){
+//                    /console.log(data);
+                    waitingDialog.message('Rendering data ...');
 
                     var labels = true; // show the text labels beside individual boxplots?
 
@@ -183,7 +206,8 @@
                                 item.values.push(stmt.result.score.raw);
                             });
                         });
-
+                        console.timeEnd('Total operating time');
+                        console.time('Total operating time');
 
                         var max = d3.max(data, function (d) {
 
@@ -209,11 +233,14 @@
 
                         // the x-axis
                         var x = d3.scale.ordinal()
-                                .domain( data.map(function(d) {
-                                    console.log(d);
-                                    d.letter = d.group;
-                                    d.group = d.letter.split("/").pop();
-                                    return d.group } ) )
+                                .domain(data
+                                    .sort(function(a, b) { return d3.descending(a.group, b.group); })
+                                    .map(function(d) {
+                                        //console.log(d);
+                                        d.letter = d.group;
+                                        d.group = d.letter.split(".").pop();
+                                        return d.group })
+                                )
                                 .rangeRoundBands([0 , width], 0.7, 0.3);
 
                         var xAxis = d3.svg.axis()
@@ -277,8 +304,10 @@
 
                     }
 
-                    draw (data)
 
+                    draw (data)
+                    console.timeEnd('Total operating time');
+                    waitingDialog.hide();
                 });
 
 
@@ -420,7 +449,7 @@
                         }
                     });
 
-                    console.log(data)
+                    //console.log(data)
                     draw(data)
                 }
 

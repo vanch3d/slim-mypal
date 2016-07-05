@@ -312,7 +312,7 @@
             search['agent'] = JSON.stringify({
                 "objectType":"Agent",
                 "mbox_sha1sum":"801bbb3112222730c9be87f52e49d4e8720ba87c" })
-            search['limit'] = 100;
+            search['limit'] = 1000;
             var ret = ADL.XAPIWrapper.getStatements(search);
             if (ret) {
 
@@ -342,14 +342,14 @@
                     //$("#builder-results").append($("<div/>",{"text": a.format("YYYY MM DD")}));
                 });*/
 
-                var svg = d3.select("#builder-d3").append("svg")
+                /*var svg = d3.select("#builder-d3").append("svg")
                         .attr("width", width + margin.left + margin.right)
                         .attr("height", height + margin.top + margin.bottom)
                         .append("g")
                         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
                 svg.call(tip);
-                draw(ret.statements);
+                draw(ret.statements);*/
             }
 
         }
