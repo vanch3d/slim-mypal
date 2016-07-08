@@ -60,17 +60,31 @@
 
 
     <div class="col-sm-6">
+
+
+
         <div class="row">
-            <button type="button" class="btn" disabled>Agent</button>
-            <button type="button" class="btn btn-primary">Verb</button>
-            <button type="button" class="btn btn-primary">Object</button>
-            <button type="button" class="btn btn-primary">Context</button>
-            <button type="button" class="btn btn-primary">Result</button>
-            <button type="button" class="btn btn-primary">Time</button>
-        </div>
-        <div class="row">
-        <pre id="json-viewer"></pre>
-        </div>
+        <div id="exTab1" class="containerXXXX">
+            <ul  class="nav nav-tabs">
+                <li class="active">
+                    <a  href="#1a" data-toggle="tab">Output</a>
+                </li>
+                <li><a href="#2a" data-toggle="tab">Pseudonyms</a>
+                </li>
+
+            </ul>
+
+            <div class="tab-content clearfix">
+                <div class="tab-pane active" id="1a">
+                    <pre id="json-viewer"></pre>
+                </div>
+                <div class="tab-pane" id="2a">
+                    <pre id="user-viewer"></pre>
+                </div>
+
+            </div>
+        </div></div>
+
     </div>
 
     <div class="col-sm-12" id="ouput">
@@ -98,7 +112,14 @@
     <script>
         $(function() {
 
-
+            $.strPad = function(i,l,s) {
+                var o = i.toString();
+                if (!s) { s = '0'; }
+                while (o.length < l) {
+                    o = s + o;
+                }
+                return o;
+            };
 
             function StationClass()
             {
@@ -116,7 +137,7 @@
             };
 
 
-            $("#json-viewer").jsonViewer({ "OSCEActivity": OSCEActivity}, {collapsed: false});
+            $("#json-viewer").jsonViewer({ "OSCEActivity": {}}, {collapsed: false});
 
             var stepped = 0, rowCount = 0, errorCount = 0, firstError;
             var start, end;
@@ -277,7 +298,14 @@
                                     'OSCE Circuit Y3 (2015)',
                                     'An OSCE usually comprises a circuit of short stations, in which each candidate is examined on a one-to-one basis with one or two impartial examiner(s) and either real or simulated patients.'
                             );
-                            var agent = new ADL.XAPIStatement.Agent(ADL.XAPIWrapper.hash(userstation.name), userstation.name);
+
+                            var username = "user" + $.strPad(pseudonyms.length,6);
+                            pseudonyms.push(
+                                    { "username" : username,
+                                      "name" : userstation.name
+                                    });
+
+                            var agent = new ADL.XAPIStatement.Agent(ADL.XAPIWrapper.hash(userstation.name), username);
 
                             // Statement: agent attempted OSCE
                             var stmt1 = new ADL.XAPIStatement(agent, ADL.verbs.attempted, objOSCE);
@@ -294,7 +322,7 @@
                                     'OSCE Circuit Y3 (2015)',
                                     'An OSCE usually comprises a circuit of short stations, in which each candidate is examined on a one-to-one basis with one or two impartial examiner(s) and either real or simulated patients.'
                             );
-                            var agent2 = new ADL.XAPIStatement.Agent(ADL.XAPIWrapper.hash(userstation.name), userstation.name);
+                            var agent2 = new ADL.XAPIStatement.Agent(ADL.XAPIWrapper.hash(userstation.name), username);
 
 
                             var stmt2 = new ADL.XAPIStatement(agent2, ADL.verbs.passed, objOSCE2 );
@@ -416,7 +444,12 @@
                         $("#json-viewer").jsonViewer(vocabulary, {collapsed: true});
 
 
+                        var csv = Papa.unparse(pseudonyms);
+                        $("#user-viewer").html(csv);
+
+
                         var count = 0;
+
 
                         while(statements.length) {
                             console.log(statements.length);

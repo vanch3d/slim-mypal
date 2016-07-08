@@ -74,14 +74,15 @@
 
 {% block javascript %}
     <!--  <script type="text/javascript" src="/lib/xapiwrapper/xapiwrapper.min.js"></script>   -->
-    <script type="text/javascript" src="/lib/xapiwrapper/cryptojs_v3.1.2.js"></script>
-    <script type="text/javascript" src="/lib/xapiwrapper/verbs.js"></script>
-    <script type="text/javascript" src="/lib/xapiwrapper/xapistatement.js"></script>
-    <script type="text/javascript" src="/lib/xapiwrapper/xapiwrapper.js"></script>
+
 
     <script type="text/javascript" src="/lib/xapiwrapper/xapicollection.js"></script>
     <script type="text/javascript" src="/lib/xapiwrapper/xapidashboard.js"></script>
 
+    <script type="text/javascript" src="/lib/xapiwrapper/cryptojs_v3.1.2.js"></script>
+    <script type="text/javascript" src="/lib/xapiwrapper/verbs.js"></script>
+    <script type="text/javascript" src="/lib/xapiwrapper/xapistatement.js"></script>
+    <script type="text/javascript" src="/lib/xapiwrapper/xapiwrapper.js"></script>
 
     <script type="text/javascript" src="/lib/json-viewer/jquery.json-viewer.js"></script>
 
@@ -159,9 +160,15 @@
             var ret = ADL.XAPIWrapper.getAggregate(search);
             console.timeEnd('Total operating time');*/
 
+            ADL.xhrRequestOnError = function(xhr, method, url, callback, callbackargs){
+                console.log("DFDFDFDFDF");
+                waitingDialog.hide();
+            };
+
 
             console.time('Total operating time');
             ADL.XAPIWrapper.changeConfig(xAPIConfig);
+            //ADL.XAPIWrapper.changeConfig({"endpoint": 'http://local.learninglocker.org/api/v1/statements/'});
             var dash = new ADL.XAPIDashboard();
 
             waitingDialog.show('Loading data ...');
@@ -169,152 +176,159 @@
             // get all statements made in the last two weeks
             //var query = {'since': new Date(Date.now() - 1000*60*60*24*30*365*4).toISOString()};
             var query = { 'limit' : 5000 };
-            dash.fetchAllStatements(query, function(collection){
-                console.timeEnd('Total operating time');
-                console.time('Total operating time');
-
-                //console.log(collection);
-                var request = collection
-                        .where('object.id = /OSCE\.station/')
-                        .groupBy('object.id')
-                        //.orderBy('object.id','descending')
-                        .max('result.score.raw')
-                        .min('result.score.raw')
 
 
-                request.exec(function(data){
-//                    /console.log(data);
-                    waitingDialog.message('Rendering data ...');
-
-                    var labels = true; // show the text labels beside individual boxplots?
-
-                    var margin = {top: 30, right: 50, bottom: 120, left: 50};
-                    var  width = 1000 - margin.left - margin.right;
-                    var height = 600 - margin.top - margin.bottom;
-
-                    function draw (data){
-                        // using an array of arrays with
-                        // data[n][2]
-                        // where n = number of columns in the data file
-                        // data[i][0] = name of the ith column
-                        // data[i][1] = array of values of ith column
-
-                        $.each(data,function(key,item){
-                            item.values = [];
-                            $.each(item.data,function(key,stmt){
-
-                                item.values.push(stmt.result.score.raw);
-                            });
-                        });
-                        console.timeEnd('Total operating time');
-                        console.time('Total operating time');
-
-                        var max = d3.max(data, function (d) {
-
-                            return d.max;//d.frequency
-                        })
-                        var min = d3.min(data, function (d) {
-
-                            return d.min;//d.frequency
-                        })
-
-                        var chart = d3.box()
-                                .whiskers(iqr(1.5))
-                                .height(height)
-                                .domain([min, max])
-                                .showLabels(labels);
-
-                        var svg = d3.select("#builder-d3").append("svg")
-                                .attr("width", width + margin.left + margin.right)
-                                .attr("height", height + margin.top + margin.bottom)
-                                .attr("class", "box")
-                                .append("g")
-                                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-                        // the x-axis
-                        var x = d3.scale.ordinal()
-                                .domain(data
-                                    .sort(function(a, b) { return d3.descending(a.group, b.group); })
-                                    .map(function(d) {
-                                        //console.log(d);
-                                        d.letter = d.group;
-                                        d.group = d.letter.split(".").pop();
-                                        return d.group })
-                                )
-                                .rangeRoundBands([0 , width], 0.7, 0.3);
-
-                        var xAxis = d3.svg.axis()
-                                .scale(x)
-                                .orient("bottom");
-
-                        // the y-axis
-                        var y = d3.scale.linear()
-                                .domain([min, max])
-                                .range([height + margin.top, 0 + margin.top]);
-
-                        var yAxis = d3.svg.axis()
-                                .scale(y)
-                                .orient("left");
-
-                        // draw the boxplots
-                        svg.selectAll(".box")
-                                .data(data)
-                                .enter().append("g")
-                                .attr("transform", function(d) { return "translate(" +  x(d.group)  + "," + margin.top + ")"; } )
-                                .call(chart.width(x.rangeBand()));
-
-
-                        // add a title
-                        svg.append("text")
-                                .attr("x", (width / 2))
-                                .attr("y", 0 + (margin.top / 2))
-                                .attr("text-anchor", "middle")
-                                .style("font-size", "18px")
-                                //.style("text-decoration", "underline")
-                                .text("OSCE 2015");
-
-                        // draw y axis
-                        svg.append("g")
-                                .attr("class", "y axis")
-                                .call(yAxis)
-                                .append("text") // and text1
-                                .attr("transform", "rotate(-90)")
-                                .attr("y", 6)
-                                .attr("dy", ".71em")
-                                .style("text-anchor", "end")
-                                .style("font-size", "16px")
-                                .attr("transform", "rotate(0)")
-                                .text("Score");
-
-                        // draw x axis
-                        svg.append("g")
-                                .attr("class", "x axis")
-                                .attr("transform", "translate(0," + (height  + margin.top + 10) + ")")
-                                .call(xAxis)
-
-                                .selectAll("text")
-                                .attr("y", 0)
-                                .attr("x", 9)
-                                .attr("dy", ".35em")
-                                .attr("transform", "rotate(90)")
-                                .style("text-anchor", "start")
-
-
-
-
-                    }
-
-
-                    draw (data)
+            try {
+                dash.fetchAllStatements(query, function (collection) {
                     console.timeEnd('Total operating time');
-                    waitingDialog.hide();
+                    console.time('Total operating time');
+
+                    //console.log(collection);
+                    var request = collection
+                            .where('object.id = /OSCE\.station/')
+                            .groupBy('object.id')
+                            //.orderBy('object.id','descending')
+                            .max('result.score.raw')
+                            .min('result.score.raw')
+
+
+                    request.exec(function (data) {
+    //                    /console.log(data);
+                        waitingDialog.message('Rendering data ...');
+
+                        var labels = true; // show the text labels beside individual boxplots?
+
+                        var margin = {top: 30, right: 50, bottom: 120, left: 50};
+                        var width = 1000 - margin.left - margin.right;
+                        var height = 600 - margin.top - margin.bottom;
+
+                        function draw(data) {
+                            // using an array of arrays with
+                            // data[n][2]
+                            // where n = number of columns in the data file
+                            // data[i][0] = name of the ith column
+                            // data[i][1] = array of values of ith column
+
+                            $.each(data, function (key, item) {
+                                item.values = [];
+                                $.each(item.data, function (key, stmt) {
+
+                                    item.values.push(stmt.result.score.raw);
+                                });
+                            });
+                            console.timeEnd('Total operating time');
+                            console.time('Total operating time');
+
+                            var max = d3.max(data, function (d) {
+
+                                return d.max;//d.frequency
+                            })
+                            var min = d3.min(data, function (d) {
+
+                                return d.min;//d.frequency
+                            })
+
+                            var chart = d3.box()
+                                    .whiskers(iqr(1.5))
+                                    .height(height)
+                                    .domain([min, max])
+                                    .showLabels(labels);
+
+                            var svg = d3.select("#builder-d3").append("svg")
+                                    .attr("width", width + margin.left + margin.right)
+                                    .attr("height", height + margin.top + margin.bottom)
+                                    .attr("class", "box")
+                                    .append("g")
+                                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                            // the x-axis
+                            var x = d3.scale.ordinal()
+                                    .domain(data
+                                            .sort(function (a, b) {
+                                                return d3.descending(a.group, b.group);
+                                            })
+                                            .map(function (d) {
+                                                //console.log(d);
+                                                d.letter = d.group;
+                                                d.group = d.letter.split(".").pop();
+                                                return d.group
+                                            })
+                                    )
+                                    .rangeRoundBands([0, width], 0.7, 0.3);
+
+                            var xAxis = d3.svg.axis()
+                                    .scale(x)
+                                    .orient("bottom");
+
+                            // the y-axis
+                            var y = d3.scale.linear()
+                                    .domain([min, max])
+                                    .range([height + margin.top, 0 + margin.top]);
+
+                            var yAxis = d3.svg.axis()
+                                    .scale(y)
+                                    .orient("left");
+
+                            // draw the boxplots
+                            svg.selectAll(".box")
+                                    .data(data)
+                                    .enter().append("g")
+                                    .attr("transform", function (d) {
+                                        return "translate(" + x(d.group) + "," + margin.top + ")";
+                                    })
+                                    .call(chart.width(x.rangeBand()));
+
+
+                            // add a title
+                            svg.append("text")
+                                    .attr("x", (width / 2))
+                                    .attr("y", 0 + (margin.top / 2))
+                                    .attr("text-anchor", "middle")
+                                    .style("font-size", "18px")
+                                    //.style("text-decoration", "underline")
+                                    .text("OSCE 2015");
+
+                            // draw y axis
+                            svg.append("g")
+                                    .attr("class", "y axis")
+                                    .call(yAxis)
+                                    .append("text") // and text1
+                                    .attr("transform", "rotate(-90)")
+                                    .attr("y", 6)
+                                    .attr("dy", ".71em")
+                                    .style("text-anchor", "end")
+                                    .style("font-size", "16px")
+                                    .attr("transform", "rotate(0)")
+                                    .text("Score");
+
+                            // draw x axis
+                            svg.append("g")
+                                    .attr("class", "x axis")
+                                    .attr("transform", "translate(0," + (height + margin.top + 10) + ")")
+                                    .call(xAxis)
+
+                                    .selectAll("text")
+                                    .attr("y", 0)
+                                    .attr("x", 9)
+                                    .attr("dy", ".35em")
+                                    .attr("transform", "rotate(90)")
+                                    .style("text-anchor", "start")
+
+
+                        }
+
+
+                        draw(data)
+                        console.timeEnd('Total operating time');
+                        waitingDialog.hide();
+                    });
+
+
                 });
+            } catch (e) {
 
-
-
-
-
-            });
+                console.log(e);
+            }
 
             return;
 
